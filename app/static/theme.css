@@ -6,3 +6,14 @@
   --doc:"Songti SC","STSong",Georgia,serif; --mono:"SFMono-Regular",Menlo,Consolas,monospace;
   --body:"PingFang SC","Microsoft YaHei",sans-serif; --row:36px; --pad:22px; --spine:196px;
 }
+
+.rework-panel{margin-block:18px}
+.rework-note{color:var(--fade);line-height:1.7;margin:0 0 14px}
+.rework-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+.rework-grid form{display:grid;gap:8px;padding:14px;border:1px solid var(--line);background:var(--fold);border-radius:6px}
+.rework-grid h3{font-size:15px;margin:0 0 4px}
+.rework-grid label{display:grid;gap:4px;font-size:13px;color:var(--fade)}
+.rework-grid input{padding:7px 8px;border:1px solid var(--join);border-radius:4px;background:#fff}
+.rework-grid button{padding:8px 10px;border:0;border-radius:4px;background:var(--accent);color:#fff;cursor:pointer}
+.rework-feedback{color:var(--warn);font-weight:600}
+.allocation.pending{opacity:.78}

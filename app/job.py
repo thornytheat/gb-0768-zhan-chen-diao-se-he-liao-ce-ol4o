@@ -7,7 +7,7 @@ from app.receipts.packet import parse_packet
 from app.receipts.tare import weigh
 from app.receipts.tickets import eligible
 
-VIEWS=('weighings','tares','lots','recovery','balance')
+VIEWS=('weighings','tares','lots','recovery','rework','balance')
 
 
 class MixingJob:
@@ -34,6 +34,11 @@ class MixingJob:
     @cached_property
     def recovery(self):
         return rebuild(self.lots['rows'])
+
+    @cached_property
+    def rework(self):
+        from app.rework import ReworkDesk, seed_from_job
+        return ReworkDesk(seed=seed_from_job(self)).snapshot()
 
     @cached_property
     def balance(self):

@@ -36,3 +36,35 @@ pots?.addEventListener('change', () => {
     row.hidden = pots.value !== 'all' && row.dataset.pot !== pots.value;
   }
 });
+
+document.querySelectorAll('form[data-rework-form]').forEach(form => {
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const feedback = document.querySelector('#rework-feedback');
+    const button = form.querySelector('[type=submit]');
+    const payload = Object.fromEntries(new FormData(form).entries());
+    if (payload.grams !== undefined && payload.grams !== '') payload.unit = 'g';
+    button.disabled = true;
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.textContent = '正在提交返工回收登记';
+    }
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const saved = await response.json();
+      if (!response.ok) throw new Error(saved.message || saved.code || '提交失败');
+      if (feedback) feedback.textContent = '已入账，正在刷新台账';
+      location.reload();
+    } catch (error) {
+      if (feedback) {
+        feedback.hidden = false;
+        feedback.textContent = error.message || '提交失败，请重试';
+      }
+      button.disabled = false;
+    }
+  });
+});

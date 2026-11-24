@@ -1,4 +1,4 @@
-from flask import Blueprint,render_template,request
+from flask import Blueprint,current_app,render_template,request
 
 from app.api import bookshelf
 from app.faults import LedgerError,REASONS
@@ -10,12 +10,25 @@ from app.receipts.units import grams
 from app.settings import EDITION
 
 LINKS={'weighings':'称量原件','tares':'容器皮重','lots':'颜料批号','recovery':'回桶分料',
-       'balance':'库存核料','history':'工单留档','receipt':'证据签发'}
+       'rework':'返工回收','balance':'库存核料','history':'工单留档','receipt':'证据签发'}
 ACTIONS={'OPEN':'期初','ISSUE':'领用','APPLY':'上件','LOSS':'损耗','RETURN':'回桶'}
 pages=Blueprint('studio',__name__)
 
 
+@pages.get('/studio/rework')
+@pages.get('/studio/workbench')
+@pages.get('/workbench')
+def rework_page_alias():
+    return desk('rework')
+
+
+@pages.get('/studio/recovery/register')
+def recovery_register_alias():
+    return desk('rework')
+
+
 @pages.get('/')
+@pages.get('/studio')
 @pages.get('/studio/<screen>')
 def desk(screen='overview'):
     if screen!='overview' and screen not in LINKS:
@@ -44,6 +57,7 @@ def desk(screen='overview'):
         rejects=data[screen]['isolated']
     if screen=='balance':
         rejects=data[screen]['invalid_receipts']
+    rework=current_app.extensions['rework_desk'].snapshot()
     return render_template('base.html',screen=screen,links=LINKS,sample=sample,key=key,data=data,meta=meta,
                            receipt=receipt,history=history,labels=REASONS,actions=ACTIONS,grams=grams,
-                           studio_label=studio_label,rejects=rejects)
+                           studio_label=studio_label,rejects=rejects,rework=rework)

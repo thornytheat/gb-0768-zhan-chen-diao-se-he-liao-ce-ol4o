@@ -26,6 +26,8 @@ python -m pytest -q
 
 试算入口为 `GET /api/trial/{dirty|clean}/{stage}`。阶段名见深度登记。自有原件可提交 `POST /api/books`，JSON 用 `sheets` 包含 `job`、`weights`、`tares`、`lots`、`claims` 的 UTF-8 文本，也可使用 `{"sample":"dirty"}`。`GET /api/books` 查历史，`GET /api/books/{key}` 查单册库存，`GET /api/export/{key}` 下载证据。
 
+返工回收工作台在 `/studio/rework`，接口前缀为 `/api/rework`：可登记上件票原用量、提交回收单、记录混新料后的实称上件和化验剩量。同票累计退回在进程锁与文件锁内校验，不得超过原用量；混桶总重和每笔前后重量逐笔对账，未化验证实的批号重量保留在 `pending_mg`，不按猜测比例转入已证实余料。
+
 - [数据定义](docs/DATA-DICTIONARY.md)
 - [模块与陷阱](docs/DEPTH.md)
 - [复核一张回桶票](docs/RECEIPT-REVIEW.md)

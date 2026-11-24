@@ -1,0 +1,121 @@
+{% set desk = rework %}
+<section class="panel folio rework-panel" id="rework-desk" aria-label="返工回收登记">
+  <div class="folio-head">
+    <h2>返工回收登记</h2>
+    <p id="rework-feedback" class="rework-feedback" role="status" hidden></p>
+  </div>
+  <p class="rework-note">混桶只入账实称总重；猜得的批号比例只作待核线索，化验证实前不记入已证实余料。同一张上件票累计退回重量不得超过原用量；化验只证实当前罐内剩量，已上件旧漆不转回余料。</p>
+  <div class="rework-grid">
+    <form id="ticket-form" data-rework-form method="post" action="/api/rework/tickets">
+      <h3>登记上件票原用量</h3>
+      <label>上件票号<input name="ticket" required list="rework-ticket-options" placeholder="例如 0003"></label>
+      <label>原用量 g<input name="mass" type="number" min="0" step="0.001" required placeholder="120.000"></label>
+      <input type="hidden" name="unit" value="g">
+      <label>原罐（可选）<input name="pot" placeholder="A12"></label>
+      <button type="submit">保存原用量</button>
+    </form>
+
+    <form id="recovery-form" data-rework-form method="post" action="/api/rework/recoveries">
+      <h3>提交刮料回收单</h3>
+      <label>上件票号<input name="ticket" required list="rework-ticket-options" placeholder="同票累计不超原用量"></label>
+      <label>本次实称 g<input name="mass" type="number" min="0" step="0.001" required></label>
+      <input type="hidden" name="unit" value="g">
+      <label>混入桶号<input name="pot" list="rework-pot-options" placeholder="RW-1"></label>
+      <label>提交人（可选）<input name="submitter"></label>
+      <button type="submit">提交回收单</button>
+    </form>
+
+    <form id="application-form" data-rework-form method="post" action="/api/rework/applications">
+      <h3>旧漆混新料后再上件</h3>
+      <label>新上件票号<input name="ticket" required></label>
+      <label>实称上件 g<input name="mass" type="number" min="0" step="0.001" required></label>
+      <input type="hidden" name="unit" value="g">
+      <label>出料桶号（参与扣桶时填）<input name="pot" list="rework-pot-options"></label>
+      <button type="submit">按实称克重入账</button>
+    </form>
+
+    <form id="verification-form" data-rework-form method="post" action="/api/rework/verifications">
+      <h3>化验证实批号剩量</h3>
+      <label>桶号<input name="pot" required list="rework-pot-options"></label>
+      <label>已证实批号<input name="lot" required placeholder="R-017"></label>
+      <label>当前剩量 g<input name="mass" type="number" min="0" step="0.001" required></label>
+      <input type="hidden" name="unit" value="g">
+      <button type="submit">证实剩量</button>
+    </form>
+  </div>
+
+  <datalist id="rework-ticket-options">
+    {% for t in desk.ticket_list %}<option value="{{ t.ticket }}">{{ grams(t.original_mg) }} g</option>{% endfor %}
+  </datalist>
+  <datalist id="rework-pot-options">
+    {% for b in desk.bucket_list %}<option value="{{ b.pot }}"></option>{% endfor %}
+  </datalist>
+
+  <div class="scroll">
+    <table class="rework-tickets" data-rework-tickets>
+      <thead><tr><th>上件票</th><th>原用量 g</th><th>累计退回 g</th><th>可退余额 g</th><th>回收单</th></tr></thead>
+      <tbody>
+      {% for t in desk.ticket_list %}
+        <tr data-ticket="{{ t.ticket }}">
+          <th scope="row">{{ t.ticket }}</th>
+          <td data-field="original_mg">{{ grams(t.original_mg) }}</td>
+          <td data-field="returned_mg">{{ grams(t.returned_mg) }}</td>
+          <td data-field="remaining_mg">{{ grams(t.remaining_mg) }}</td>
+          <td>{{ t.recovery_ids|length }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">尚未登记返工回收原用量。</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="scroll">
+    <table class="rework-buckets" data-rework-buckets>
+      <thead><tr><th>桶号</th><th>整桶当前 g</th><th>已证实批号剩量 g</th><th>待核总量 g</th><th>对账差 g</th><th>未证实批号</th></tr></thead>
+      <tbody>
+      {% for b in desk.bucket_list %}
+        <tr data-pot="{{ b.pot }}">
+          <th scope="row">{{ b.pot }}</th>
+          <td data-field="total_mg">{{ grams(b.total_mg) }}</td>
+          <td>{% for lot,qty in b.verified_mg.items() %}<span class="allocation">{{ lot }} <b>{{ grams(qty) }}</b></span>{% else %}—{% endfor %}</td>
+          <td data-field="pending_mg">{{ grams(b.pending_mg) }}</td>
+          <td data-field="check_mg">{{ grams(b.check_mg) }}</td>
+          <td>{% for lot in b.pending_lots %}<span class="allocation pending">{{ lot }} · 待核</span>{% else %}—{% endfor %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">混桶称重后显示前后重量与待核余量。</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="scroll">
+    <table class="rework-events" data-rework-events>
+      <thead><tr><th>记录</th><th>动作</th><th>票号 / 桶</th><th>实称 g</th><th>前 g</th><th>后 g</th><th>批号 / 待核</th></tr></thead>
+      <tbody>
+      {% for r in desk.recoveries[-12:]|reverse %}
+        <tr data-recovery-id="{{ r.id }}">
+          <th scope="row">{{ r.id }}</th><td>回收</td><td>{{ r.ticket }} / {{ r.pot }}</td>
+          <td>{{ grams(r.mass_mg) }}</td><td>{{ grams(r.before_mg) }}</td><td>{{ grams(r.after_mg) }}</td>
+          <td>总量待核，不按猜配比分批入账</td>
+        </tr>
+      {% endfor %}
+      {% for r in desk.applications[-12:]|reverse %}
+        <tr data-application-id="{{ r.id }}">
+          <th scope="row">{{ r.id }}</th><td>上件</td><td>{{ r.ticket }} / {{ r.pot }}</td>
+          <td>{{ grams(r.mass_mg) }}</td><td>{{ grams(r.before_mg) }}</td><td>{{ grams(r.after_mg) }}</td>
+          <td>实称总量入账，批号继续待核</td>
+        </tr>
+      {% endfor %}
+      {% for r in desk.verifications[-12:]|reverse %}
+        <tr data-verification-id="{{ r.id }}">
+          <th scope="row">{{ r.id }}</th><td>化验</td><td>{{ r.lot }} / {{ r.pot }}</td>
+          <td>{{ grams(r.remaining_mg) }}</td><td>{{ grams(r.before_mg) }}</td><td>{{ grams(r.after_mg) }}</td>
+          <td>只证实当前剩量，不转回已上件旧漆</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

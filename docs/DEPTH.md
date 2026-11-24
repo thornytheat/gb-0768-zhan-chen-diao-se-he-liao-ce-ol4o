@@ -14,6 +14,7 @@
 | M5 库存与损耗对账 | 按批号核对存量、损耗与回桶申报 | `GET /api/trial/dirty/balance` | `app/blend/balance.py` `app/blend/claims.py` | `tests/test_balance.py` |
 | M6 批次留档复跑 | 封存工单及重跑 | `POST /api/books` | `app/ledger/bookshelf.py` `app/ledger/closeout.py` | `tests/test_history.py` |
 | M7 收据证据签发 | 签发可独立复核的成分收据 | `GET /api/export/{key}` | `app/ledger/signoff.py` | `tests/test_receipt.py` |
+| M8 返工回收工作台 | 并发登记回收、待核批号与化验剩量 | `/studio/rework` `POST /api/rework/recoveries` | `app/rework/core.py` `app/api.py` | 工作台接口测试 |
 
 ## 陷阱登记
 
@@ -35,6 +36,7 @@
 
 - 秤单 40 = 入册 34 + 隔离 5 + 重复表头 1。后续 3 张皮重隔离、2 张批号隔离、1 张超量，回放 28 张。
 - 每批号期初 + 领用 = 上件 + 损耗 + 回桶余料 + 争议留罐，实收与申报差异另外对照。
+- 返工回收按整桶实称重量记账：`after_mg = before_mg + recovered_mg + issued_mg - applied_mg - loss_mg`；同一张上件票累计回收不得超过原用量。化验值是当前罐内该批号剩量，不回加已上件旧漆，未证实重量留在待核额。
 - 规则版本与全原件的 SHA-256 构成工单留档键；同目录临时文件写入并同步后，以原子硬链接发布。
 
 ## 已知边界
